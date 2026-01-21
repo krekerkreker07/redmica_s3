@@ -141,6 +141,6 @@ module RedmicaS3
       end
     end
 
-    private_class_method  :establish_connection, :load_options, :s3_options, :conn, :own_bucket, :bucket, :endpoint, :region
+    private_class_method  :establish_connection, :load_options, :s3_options, :conn, :own_bucket, :bucket, :endpoint, :region, :force_path_style
   end
 end
