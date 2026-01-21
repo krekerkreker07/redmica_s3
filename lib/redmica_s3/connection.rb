@@ -88,9 +88,16 @@ module RedmicaS3
         }
         if endpoint.present?
           options[:endpoint] = endpoint
-        elsif region.present?
+        end
+
+        if region.present?
           options[:region] = region
         end
+
+        if force_path_style.present?
+          options[:force_path_style] = force_path_style
+        end
+
         @@conn = Aws::S3::Resource.new(options)
       end
 
@@ -127,6 +134,10 @@ module RedmicaS3
 
       def region
         s3_options[:region]
+      end
+
+      def force_path_style
+        s3_options[:force_path_style]
       end
     end
 
