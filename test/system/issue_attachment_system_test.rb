@@ -17,7 +17,8 @@ module RedmicaS3
       attach_file 'attachments[dummy][file]', [
         file_fixture('text.txt'),
         file_fixture('png.png'),
-        file_fixture('pdf.pdf')
+        file_fixture('pdf.pdf'),
+        file_fixture('with_pdf_magic.ps.pdf')
       ]
 
       click_button 'commit'
@@ -28,6 +29,7 @@ module RedmicaS3
         assert_text 'text.txt'
         assert_text 'png.png'
         assert_text 'pdf.pdf'
+        assert_text 'with_pdf_magic.ps.pdf'
       end
 
       within '.thumbnails' do
@@ -47,8 +49,8 @@ module RedmicaS3
 
       issue = Issue.order(:id).last
 
-      assert_equal 3, issue.attachments.size
-      assert_equal 3, count_s3_attachment_objects
+      assert_equal 4, issue.attachments.size
+      assert_equal 4, count_s3_attachment_objects
       assert_equal 2, count_s3_thumbnail_objects
 
       issue.attachments.each do |attachment|
@@ -100,6 +102,87 @@ module RedmicaS3
 
       assert_empty issue.attachments
       assert_equal 0, count_s3_attachment_objects
+    end
+
+    test 'should preview pdf file on attachment display page' do
+      issue = create_issue_with_attachments('pdf.pdf')
+      attachment = issue.attachments.first
+
+      visit "/issues/#{issue.id}"
+
+      assert_selector 'h3', text: issue.subject
+      within '.attachments' do
+        assert has_link?('pdf.pdf', href: attachment_path(attachment))
+        click_link 'pdf.pdf', match: :first
+      end
+
+      path = download_named_attachment_path(attachment, attachment.filename)
+      assert has_link?('Open in full view', href: path)
+      within '.filecontent.pdf' do
+        assert_selector "object[type='application/pdf'][data='#{path}']"
+      end
+    end
+
+    test 'should preview docx file on attachment display page' do
+      issue = create_issue_with_attachments('docx.docx')
+      attachment = issue.attachments.first
+
+      visit "/issues/#{issue.id}"
+
+      assert_selector 'h3', text: issue.subject
+      within '.attachments' do
+        assert has_link?('docx.docx', href: attachment_path(attachment))
+        click_link 'docx.docx', match: :first
+      end
+
+      assert_selector '.filecontent.wiki', text: /This is a docx file\./
+      assert_equal 1, count_s3_markdownized_preview_objects
+      assert verify_markdownized_preview_stored_in_s3(attachment)
+    end
+
+    test 'should preview odt file on attachment display page' do
+      issue = create_issue_with_attachments('odt.odt')
+      attachment = issue.attachments.first
+
+      visit "/issues/#{issue.id}"
+
+      assert_selector 'h3', text: issue.subject
+      within '.attachments' do
+        assert has_link?('odt.odt', href: attachment_path(attachment))
+        click_link 'odt.odt', match: :first
+      end
+
+      assert_selector '.filecontent.wiki', text: /This is an odt file\./
+    end
+
+    test 'should preview pptx file on attachment display page' do
+      issue = create_issue_with_attachments('pptx.pptx')
+      attachment = issue.attachments.first
+
+      visit "/issues/#{issue.id}"
+
+      assert_selector 'h3', text: issue.subject
+      within '.attachments' do
+        assert has_link?('pptx.pptx', href: attachment_path(attachment))
+        click_link 'pptx.pptx', match: :first
+      end
+
+      assert_selector '.filecontent.wiki', text: /This is a pptx file\./
+    end
+
+    test 'should preview xlsx file on attachment display page' do
+      issue = create_issue_with_attachments('xlsx.xlsx')
+      attachment = issue.attachments.first
+
+      visit "/issues/#{issue.id}"
+
+      assert_selector 'h3', text: issue.subject
+      within '.attachments' do
+        assert has_link?('xlsx.xlsx', href: attachment_path(attachment))
+        click_link 'xlsx.xlsx', match: :first
+      end
+
+      assert_selector '.filecontent.wiki', text: /This is a xlsx file\./
     end
 
     private
